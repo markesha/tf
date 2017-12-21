@@ -61,6 +61,7 @@ resource "aws_security_group_rule" "allow_custom" {
   security_group_id = "${aws_security_group.instance.id}"
   to_port = "${var.server_port}"
   type = "ingress"
+  cidr_blocks = ["0.0.0.0/0"]
 }
 
 resource "aws_security_group" "elb" {
@@ -69,7 +70,7 @@ resource "aws_security_group" "elb" {
 
 resource "aws_security_group_rule" "allow_http_inbound" {
   from_port = 80
-  protocol = "tpc"
+  protocol = "tcp"
   security_group_id = "${aws_security_group.elb.id}"
   to_port = 80
   type = "ingress"
@@ -82,6 +83,7 @@ resource "aws_security_group_rule" "allow_all_outbound" {
   security_group_id = "${aws_security_group.elb.id}"
   to_port = 0
   type = "egress"
+  cidr_blocks = ["0.0.0.0/0"]
 }
 
 data "aws_availability_zones" "all" {}
@@ -91,8 +93,8 @@ data "terraform_remote_state" "db" {
 
   config {
     bucket = "${var.db_remote_state_bucket}"
-    region = "us-east-1"
     key = "${var.db_remote_state_key}"
+    region = "us-east-1"
   }
 }
 
