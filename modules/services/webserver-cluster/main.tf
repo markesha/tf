@@ -83,7 +83,7 @@ resource "aws_cloudwatch_metric_alarm" "low_cpu_credit_balance" {
     AutoScalingGroupName = "${aws_autoscaling_group.example.name}"
   }
   
-  comparison_operator = "LessThenThreshold"
+  comparison_operator = "LessThanThreshold"
   evaluation_periods = 1
   period = 300
   statistic = "Minimum"
