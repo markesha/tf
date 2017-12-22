@@ -58,7 +58,7 @@ resource "aws_autoscaling_schedule" "scale_out_during_business_hours" {
   max_size = 2
   desired_capacity = 2
   recurrence = "0 9 * * *"
-  autoscaling_group_name = "${aws_autoscaling_schedule.example.name}"
+  autoscaling_group_name = "${aws_autoscaling_group.example.name}"
 }
 
 resource "aws_autoscaling_schedule" "scale_in_at_night" {
@@ -69,7 +69,26 @@ resource "aws_autoscaling_schedule" "scale_in_at_night" {
   max_size = 2
   desired_capacity = 2
   recurrence = "0 17 * * *"
-  autoscaling_group_name = "${aws_autoscaling_schedule.example.name}"
+  autoscaling_group_name = "${aws_autoscaling_group.example.name}"
+}
+
+resource "aws_cloudwatch_metric_alarm" "low_cpu_credit_balance" {
+  count = "${format("%.1s", var.instance_type) == "t" ? 1 : 0}"
+  
+  alarm_name = "${var.cluster_name}-low-cpu-credit-balance"
+  namespace = "AWS/EC2"
+  metric_name = "CPUCreditBalance"
+  
+  dimensions = {
+    AutoScalingGroupName = "${aws_autoscaling_group.example.name}"
+  }
+  
+  comparison_operator = "LessThenThreshold"
+  evaluation_periods = 1
+  period = 300
+  statistic = "Minimum"
+  threshold = 10
+  unit = "Count"
 }
 
 resource "aws_security_group" "instance" {
