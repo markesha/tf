@@ -1,7 +1,7 @@
 resource "aws_launch_configuration" "example" {
 
   instance_type = "${var.instance_type}"
-  user_data = "${data.template_file.user_data.rendered}"
+  user_data = "${element(concat(data.template_file.user_data.*.rendered, data.template_file.user_data_new.*.rendered),0)}"
 
   security_groups = ["${aws_security_group.instance.id}"]
   image_id = "ami-40d28157"
@@ -30,19 +30,29 @@ resource "aws_elb" "example" {
     timeout = 3
     unhealthy_threshold = 2
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_autoscaling_group" "example" {
+  name = "${var.cluster_name}-${aws_launch_configuration.example.name}"
+
   availability_zones = ["${data.aws_availability_zones.all.names}"]
   launch_configuration = "${aws_launch_configuration.example.id}"
-
   load_balancers = ["${aws_elb.example.name}"]
   health_check_type = "ELB"
 
   max_size = "${var.max_size}"
   min_size = "${var.min_size}"
+  min_elb_capacity = "${var.min_size  }"
   desired_capacity = 2
-  
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tag {
     key = "Name"
     value = "${var.cluster_name}"
@@ -110,6 +120,10 @@ resource "aws_security_group_rule" "allow_custom" {
 
 resource "aws_security_group" "elb" {
   name = "${var.cluster_name}-elb"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_security_group_rule" "allow_http_inbound" {
@@ -144,10 +158,22 @@ data "terraform_remote_state" "db" {
 
 data "template_file" "user_data" {
   template = "${file("${path.module}/user-data.sh")}"
+  count = "${1 - var.enable_new_user_data}"
 
   vars {
     server_port = "${var.server_port}"
     db_address = "${data.terraform_remote_state.db.address}"
     db_port = "${data.terraform_remote_state.db.port}"
+  }
+}
+
+data "template_file" "user_data_new" {
+
+  count = "${var.enable_new_user_data}"
+  template = "${file("${path.module}/user-data-new.sh")}"
+
+  vars {
+    server_port = "${var.server_port}"
+    server_text = "${var.server_text}"
   }
 }

@@ -23,6 +23,8 @@ module "webserver-cluster" {
   
   enable_autoscaling = false
   enable_new_user_data = true
+  ami = "ami-40d28157"
+  server_text = "zero-downtime test"
 }
 
 resource "aws_security_group_rule" "allow_testing_inbound" {
